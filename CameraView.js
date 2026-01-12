@@ -97,14 +97,24 @@ export default function CameraView({ folder, onClose }) {
                     </div>
 
                     {!capturedImage ? (
-                        <button
-                            onClick={triggerCamera}
-                            className="w-24 h-24 rounded-full bg-white flex items-center justify-center p-2 shadow-[0_0_30px_rgba(255,255,255,0.3)]"
-                        >
-                            <div className="w-full h-full rounded-full border-[3px] border-black flex items-center justify-center">
-                                <Camera size={32} className="text-black" />
-                            </div>
-                        </button>
+                        <div className="relative w-24 h-24">
+                            <button
+                                className="w-full h-full rounded-full bg-white flex items-center justify-center p-2 shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+                            >
+                                <div className="w-full h-full rounded-full border-[3px] border-black flex items-center justify-center">
+                                    <Camera size={32} className="text-black" />
+                                </div>
+                            </button>
+                            {/* Hidden but clickable overlay */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                onChange={handleCapture}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                            />
+                        </div>
                     ) : (
                         <div className="flex gap-6 animate-slide-up">
                             <button
