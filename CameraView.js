@@ -6,54 +6,25 @@ import { useMedia } from '@/lib/MediaStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CameraView({ folder, onClose }) {
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
+    const fileInputRef = useRef(null);
     const { addMediaToFolder } = useMedia();
-    const [stream, setStream] = useState(null);
     const [capturedImage, setCapturedImage] = useState(null);
-    const [mode, setMode] = useState('photo'); // 'photo' or 'video'
+    const [isCapturing, setIsCapturing] = useState(false);
 
-    const startCamera = async () => {
-        try {
-            const newStream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 4096 },
-                    height: { ideal: 2160 }
-                },
-                audio: false
-            });
-            setStream(newStream);
-            if (videoRef.current) {
-                videoRef.current.srcObject = newStream;
-            }
-        } catch (err) {
-            console.error("Error accessing camera:", err);
+    const triggerCamera = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
         }
     };
 
-    useEffect(() => {
-        startCamera();
-        return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const takePhoto = () => {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        if (video && canvas) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d', { alpha: false });
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(video, 0, 0);
-            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-            setCapturedImage(dataUrl);
+    const handleCapture = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setCapturedImage(event.target.result);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -65,7 +36,6 @@ export default function CameraView({ folder, onClose }) {
                 name: `Shot_${Date.now()}.jpg`
             });
             setCapturedImage(null);
-            // Continuous shooting mode - don't close, just clear preview
         }
     };
 
@@ -87,40 +57,38 @@ export default function CameraView({ folder, onClose }) {
                 </button>
             </div>
 
-            {/* Viewport */}
-            <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+            {/* Viewport / Preview */}
+            <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-zinc-900">
                 {!capturedImage ? (
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="w-full h-full object-cover"
-                    />
+                    <div className="text-center p-8">
+                        <div className="w-24 h-24 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Camera size={40} className="text-zinc-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">Native Quality Mode</h3>
+                        <p className="text-zinc-400 max-w-[250px] mx-auto">
+                            시스템 카메라를 실행하여 가장 선명한 화질로 촬영합니다.
+                        </p>
+                    </div>
                 ) : (
-                    <img src={capturedImage} className="w-full h-full object-cover" alt="Captured" />
+                    <img src={capturedImage} className="w-full h-full object-contain" alt="Captured" />
                 )}
-                <canvas ref={canvasRef} className="hidden" />
+
+                {/* Hidden Native Input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleCapture}
+                    className="hidden"
+                />
             </div>
 
             {/* Controls */}
-            <div className="p-8 pb-12 bg-black flex flex-col items-center gap-8">
-                <div className="flex items-center gap-12 text-zinc-500 font-medium">
-                    <button
-                        className={mode === 'photo' ? 'text-white' : ''}
-                        onClick={() => setMode('photo')}
-                    >
-                        PHOTO
-                    </button>
-                    <button
-                        className={mode === 'video' ? 'text-white' : ''}
-                        onClick={() => setMode('video')}
-                    >
-                        VIDEO
-                    </button>
-                </div>
-
+            <div className="p-8 pb-12 bg-black flex flex-col items-center gap-8 border-t border-zinc-900">
                 <div className="flex items-center justify-between w-full max-w-sm">
-                    <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center overflow-hidden">
+                    {/* Thumbnail */}
+                    <div className="w-12 h-12 rounded-xl border border-white/10 flex items-center justify-center overflow-hidden bg-zinc-900">
                         {folder.items.length > 0 ? (
                             <img src={folder.items[0].url} className="w-full h-full object-cover" />
                         ) : (
@@ -130,13 +98,15 @@ export default function CameraView({ folder, onClose }) {
 
                     {!capturedImage ? (
                         <button
-                            onClick={takePhoto}
-                            className="w-20 h-20 rounded-full bg-white flex items-center justify-center p-1"
+                            onClick={triggerCamera}
+                            className="w-24 h-24 rounded-full bg-white flex items-center justify-center p-2 shadow-[0_0_30px_rgba(255,255,255,0.3)]"
                         >
-                            <div className="w-full h-full rounded-full border-2 border-black" />
+                            <div className="w-full h-full rounded-full border-[3px] border-black flex items-center justify-center">
+                                <Camera size={32} className="text-black" />
+                            </div>
                         </button>
                     ) : (
-                        <div className="flex gap-6">
+                        <div className="flex gap-6 animate-slide-up">
                             <button
                                 onClick={() => setCapturedImage(null)}
                                 className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center text-white"
@@ -152,9 +122,9 @@ export default function CameraView({ folder, onClose }) {
                         </div>
                     )}
 
-                    <button className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center text-white">
-                        <RefreshCw size={20} />
-                    </button>
+                    <div className="w-12 h-12 flex items-center justify-center">
+                        {/* Placeholder for symmetry */}
+                    </div>
                 </div>
             </div>
         </div>
