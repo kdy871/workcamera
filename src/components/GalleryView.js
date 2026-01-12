@@ -9,6 +9,15 @@ export default function GalleryView({ folder, onBack, onOpenCamera }) {
     const { deleteMedia } = useMedia();
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
+    const handleDownload = (url, filename) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="flex flex-col h-full bg-background animate-slide-up">
             {/* Header */}
@@ -57,7 +66,13 @@ export default function GalleryView({ folder, onBack, onOpenCamera }) {
                                     {viewMode === 'grid' ? (
                                         <div className="aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800">
                                             <img src={item.url} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDownload(item.url, item.name); }}
+                                                    className="w-10 h-10 rounded-full bg-blue-500/80 text-white flex items-center justify-center"
+                                                >
+                                                    <Download size={18} />
+                                                </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); deleteMedia(folder.id, item.id); }}
                                                     className="w-10 h-10 rounded-full bg-red-500/80 text-white flex items-center justify-center"
@@ -75,12 +90,20 @@ export default function GalleryView({ folder, onBack, onOpenCamera }) {
                                                 <p className="font-medium text-white text-sm truncate">{item.name}</p>
                                                 <p className="text-xs text-zinc-500">{new Date(item.capturedAt).toLocaleTimeString()}</p>
                                             </div>
-                                            <button
-                                                onClick={() => deleteMedia(folder.id, item.id)}
-                                                className="text-zinc-600 hover:text-red-400 p-2"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleDownload(item.url, item.name)}
+                                                    className="text-zinc-400 hover:text-blue-400 p-2"
+                                                >
+                                                    <Download size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteMedia(folder.id, item.id)}
+                                                    className="text-zinc-600 hover:text-red-400 p-2"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </motion.div>
